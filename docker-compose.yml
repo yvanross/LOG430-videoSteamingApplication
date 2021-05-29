@@ -18,23 +18,6 @@ services:
       - "5672"
       - "15672"
     restart: always
-  
-  azure-storage:
-    image: azure-storage
-    build: 
-      context: ./azure-storage
-      dockerfile: Dockerfile-dev
-    container_name: video-storage
-    volumes:
-      - /tmp/azure-storage/npm-cache:/root/.npm:z
-      - ./azure-storage/src:/usr/src/app/src:z
-    ports:
-     - "4001:80"
-    environment:
-      - PORT=80
-      - STORAGE_ACCOUNT_NAME=rossyprovideostreaming
-      - STORAGE_ACCESS_KEY=7h0rtEO4RD9pRuMmBMySGD8hIlDynsqlVYqGdMR8kHZPV4PDf93tu34FtDbLCclPSHnQOkf+4SfdQQTqzQ+bnQ==
-    restart: "no"
 
   video-streaming:
     image: video-streaming
@@ -47,7 +30,7 @@ services:
       - ./video-streaming/src:/usr/src/app/src:z
       - ./video-streaming/videos:/usr/src/app/videos:z
     ports:
-     - "4002:80"
+      - "4001:80"
     environment:
       - PORT=80
       - DBHOST=mongodb://db:27017
@@ -58,6 +41,23 @@ services:
     depends_on:
       - db
       - rabbit
+    restart: "no" 
+  
+  azure-storage:
+    image: azure-storage
+    build: 
+      context: ./azure-storage
+      dockerfile: Dockerfile-dev
+    container_name: video-storage
+    volumes:
+      - /tmp/azure-storage/npm-cache:/root/.npm:z
+      - ./azure-storage/src:/usr/src/app/src:z
+    ports:
+     - "4002:80"
+    environment:
+      - PORT=80
+      - STORAGE_ACCOUNT_NAME=rossyprovideostreaming
+      - STORAGE_ACCESS_KEY=7h0rtEO4RD9pRuMmBMySGD8hIlDynsqlVYqGdMR8kHZPV4PDf93tu34FtDbLCclPSHnQOkf+4SfdQQTqzQ+bnQ==
     restart: "no"
 
   history:
@@ -82,3 +82,24 @@ services:
       - rabbit
     restart: "no"
 
+  recommendations:
+    image: recommendations
+    build: 
+      context: ./recommendations
+      dockerfile: Dockerfile-dev
+    container_name: recommendations
+    volumes:
+      - /tmp/recommendations/npm-cache:/root/.npm:z
+      - ./recommendations/src:/usr/src/app/src:z
+    ports:
+      - "4004:80"
+    environment:
+      - PORT=80
+      - RABBIT=amqp://guest:guest@rabbit:5672
+      - DBHOST=mongodb://db:27017
+      - DBNAME=recommendations
+      - NODE_ENV=development
+    depends_on:
+      - db
+      - rabbit
+    restart: "no"

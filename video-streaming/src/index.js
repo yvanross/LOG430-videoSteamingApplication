@@ -19,7 +19,13 @@ function connectRabbit() {
         .then(connection => {
             console.log("Connected to RabbitMQ.");
 
-            return connection.createChannel(); // Create a RabbitMQ messaging channel.
+            return connection.createChannel() // Create a RabbitMQ messaging channel.
+                .then(messageChannel => {
+                    return messageChannel.assertExchange("viewed", "fanout") // Assert that we have a "viewed" exchange.
+                        .then(() => {
+                            return messageChannel;
+                        });
+                });
         });
 }
 
@@ -27,11 +33,11 @@ function connectRabbit() {
 // Send the "viewed" to the history microservice.
 //
 function sendViewedMessage(messageChannel, videoPath) {
-    console.log(`Publishing message on "viewed" queue.`);
+    console.log('Publishing message <' + videoPath + '> on "viewed" queue.');
 
-    const msg = { videoPath: videoPath };
+    const msg = { vsideoPath: videoPath };
     const jsonMsg = JSON.stringify(msg);
-    messageChannel.publish("", "viewed", Buffer.from(jsonMsg)); // Publish message to the "viewed" queue.
+    messageChannel.publish("viewed", "", Buffer.from(jsonMsg)); // Publish message to the "viewed" queue.
 }
 
 //
@@ -39,9 +45,8 @@ function sendViewedMessage(messageChannel, videoPath) {
 //
 function setupHandlers(app, messageChannel) {
     app.get("/video", (req, res) => { // Route for streaming video.
-
+        console.log("/video-streaming/video");
         const videoPath = "./videos/SampleVideo_1280x720_1mb.mp4";
-        console.log('video1 streaming ' + videoPath)
         fs.stat(videoPath, (err, stats) => {
             if (err) {
                 console.error("An error occurred ");
@@ -55,9 +60,9 @@ function setupHandlers(app, messageChannel) {
             });
     
             fs.createReadStream(videoPath).pipe(res);
-
             sendViewedMessage(messageChannel, videoPath); // Send message to "history" microservice that this video has been "viewed".
         });
+        // res.send("allo")
     });
 }
 
