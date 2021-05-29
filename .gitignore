@@ -2,3 +2,6 @@
 azure-storage/node_modules/
 history/node_modules/
 video-streaming/node_modules/
+./azure-storage/secret.txt 
+./history/secret.txt 
+./video-streaming/secret.txt 
