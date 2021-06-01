@@ -44,7 +44,6 @@ function createBlobService() {
 //
 
 app.get("/",(req,res)=> {
-console.log("/video?path=SampleVideo_1280x720_1mb.mp4");
 res.send("Must use http://localhost:3000/video?path=SampleVideo_1280x720_1mb.mp4")
 });
 

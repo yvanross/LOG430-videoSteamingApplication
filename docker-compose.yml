@@ -44,21 +44,37 @@ services:
       - rabbit
     restart: "no" 
   
-  azure-storage:
-    image: azure-storage
+  # vido-storage:
+  #   image: azure-storage
+  #   build: 
+  #     context: ./azure-storage
+  #     dockerfile: Dockerfile-dev
+  #   container_name: video-storage
+  #   volumes:
+  #     - /tmp/azure-storage/npm-cache:/root/.npm:z
+  #     - ./azure-storage/src:/usr/src/app/src:z
+  #   ports:
+  #    - "4002:80"
+  #   environment:
+  #     - PORT=80
+  #     - STORAGE_ACCOUNT_NAME=rossyprovideostreaming
+  #     - STORAGE_ACCESS_KEY=7h0rtEO4RD9pRuMmBMySGD8hIlDynsqlVYqGdMR8kHZPV4PDf93tu34FtDbLCclPSHnQOkf+4SfdQQTqzQ+bnQ==
+  #   restart: "no"
+
+  video-storage:
+    image: mock-storage
     build: 
-      context: ./azure-storage
+      context: ./mock-storage
       dockerfile: Dockerfile-dev
     container_name: video-storage
     volumes:
-      - /tmp/azure-storage/npm-cache:/root/.npm:z
-      - ./azure-storage/src:/usr/src/app/src:z
+      - /tmp/mock-storage/npm-cache:/root/.npm:z
+      - ./mock-storage/src:/usr/src/app/src:z
+      - ./mock-storage/storage:/usr/src/app/storage:z
     ports:
      - "4002:80"
     environment:
       - PORT=80
-      - STORAGE_ACCOUNT_NAME=rossyprovideostreaming
-      - STORAGE_ACCESS_KEY=7h0rtEO4RD9pRuMmBMySGD8hIlDynsqlVYqGdMR8kHZPV4PDf93tu34FtDbLCclPSHnQOkf+4SfdQQTqzQ+bnQ==
     restart: "no"
 
   history:
@@ -130,6 +146,26 @@ services:
       - NODE_ENV=development
     depends_on:
       - db
+    restart: "no"
+
+  video-upload:
+    image: video-upload
+    build: 
+      context: ./video-upload
+      dockerfile: Dockerfile-dev
+    container_name: video-upload
+    volumes:
+      - /tmp/video-upload/npm-cache:/root/.npm:z
+      - ./video-upload/src:/usr/src/app/src:z
+      - ./video-upload/uploads:/usr/src/app/uploads:z
+    ports:
+     - "4007:80"
+    environment:
+      - PORT=80
+      - RABBIT=amqp://guest:guest@rabbit:5672
+      - NODE_ENV=development
+    depends_on:
+      - rabbit
     restart: "no"
 
 

@@ -1,6 +1,7 @@
 const express = require("express");
 const path = require("path");
 const request = require("request");
+const {v4:uuid} =  require("uuid")
 
 //
 // Setup event handlers.
@@ -15,11 +16,12 @@ function setupHandlers(app) {
     // Main web page that lists videos.
     //
     app.get("/", (req, res) => {
-        console.log("XXXXX")
+        const cid = uuid();
         request.get( // Get the list of videos from the metadata service.
             "http://metadata/videos", 
             { json: true }, 
             (err, response, body) => {
+                
                 if (err || response.statusCode !== 200) {
                     console.error("Failed to get video list.");
                     console.error(err || `Status code: ${response.statusCode}`);

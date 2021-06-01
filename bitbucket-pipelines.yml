@@ -10,5 +10,6 @@ pipelines:
             - docker
           script:
             - export VERSION=$BITBUCKET_BUILD_NUMBER
+            - cd video-streaming && npm install && npm test
             -  chmod +x ./scripts/deploy.sh
             - ./scripts/deploy.sh
