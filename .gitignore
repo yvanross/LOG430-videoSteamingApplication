@@ -7,3 +7,4 @@ history/secret.txt
 video-streaming/secret.txt 
 scripts/secret.txt
 scripts/.terraform
+./scripts/.terraform
