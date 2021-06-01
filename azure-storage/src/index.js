@@ -90,5 +90,5 @@ app.get("/video", (req, res) => {
 // Starts the HTTP server.
 //
 app.listen(PORT, () => {
-    console.log(`Azure-storage3 Microservice online`);
+    console.log(`Azure-storage Microservice online`);
 });
