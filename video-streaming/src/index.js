@@ -91,9 +91,15 @@ function main() {
         });
 }
 
+if(require.min === module){
 main()
     .then(() => console.log("Video-Streaming2 Microservice online."))
     .catch(err => {
         console.error("Microservice failed to start.");
         console.error(err && err.stack || err);
     });
+} else {
+    module.exports = {
+        connectRabbit,
+    };
+}
