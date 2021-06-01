@@ -5,3 +5,4 @@ video-streaming/node_modules/
 azure-storage/secret.txt 
 history/secret.txt 
 video-streaming/secret.txt 
+scripts/secret.txt
