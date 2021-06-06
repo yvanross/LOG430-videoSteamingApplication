@@ -1,6 +1,6 @@
 const express = require("express");
-const fs = require("fs");
 const amqp = require('amqplib');
+const http = require("http");
 
 if (!process.env.RABBIT) {
     throw new Error("Please specify the name of the RabbitMQ host using environment variable RABBIT");
@@ -30,14 +30,14 @@ function connectRabbit() {
 }
 
 //
-// Send the "viewed" to the history microservice.
+// Broadcast the "viewed" message.
 //
-function sendViewedMessage(messageChannel, videoPath) {
-    console.log('Publishing message <' + videoPath + '> on "viewed" queue.');
-
-    const msg = { vsideoPath: videoPath };
+function broadcastViewedMessage(messageChannel, videoId) {
+    console.log(`Publishing message on "viewed" exchange.`);
+        
+    const msg = { video: { id: videoId , datetime: new Date()} };
     const jsonMsg = JSON.stringify(msg);
-    messageChannel.publish("viewed", "", Buffer.from(jsonMsg)); // Publish message to the "viewed" queue.
+    messageChannel.publish("viewed", "", Buffer.from(jsonMsg)); // Publish message to the "viewed" exchange.
 }
 
 //
@@ -45,24 +45,24 @@ function sendViewedMessage(messageChannel, videoPath) {
 //
 function setupHandlers(app, messageChannel) {
     app.get("/video", (req, res) => { // Route for streaming video.
-        console.log("/video-streaming/video");
-        const videoPath = "./videos/SampleVideo_1280x720_1mb.mp4";
-        fs.stat(videoPath, (err, stats) => {
-            if (err) {
-                console.error("An error occurred ");
-                res.sendStatus(500);
-                return;
+        const videoId = req.query.id;
+        console.log(`video-streaming/?id=${videoId}`)
+        const forwardRequest = http.request( // Forward the request to the video storage microservice.
+            {
+                host: `video-storage`,
+                path: `/video?id=${videoId}`,
+                method: 'GET',
+                headers: req.headers,
+            }, 
+            forwardResponse => {
+                res.writeHeader(forwardResponse.statusCode, forwardResponse.headers);
+                forwardResponse.pipe(res);
             }
-    
-            res.writeHead(200, {
-                "Content-Length": stats.size,
-                "Content-Type": "video/mp4",
-            });
-    
-            fs.createReadStream(videoPath).pipe(res);
-            sendViewedMessage(messageChannel, videoPath); // Send message to "history" microservice that this video has been "viewed".
-        });
-        // res.send("allo")
+        );
+        
+        req.pipe(forwardRequest);
+
+        broadcastViewedMessage(messageChannel, videoId); // Send "viewed" message to indicate this video has been watched.
     });
 }
 
@@ -91,15 +91,9 @@ function main() {
         });
 }
 
-if(require.min === module){
 main()
-    .then(() => console.log("Video-Streaming2 Microservice online."))
+    .then(() => console.log("video-streaming Microservice online."))
     .catch(err => {
-        console.error("Microservice failed to start.");
+        console.error("video-streaming Microservice failed to start.");
         console.error(err && err.stack || err);
     });
-} else {
-    module.exports = {
-        connectRabbit,
-    };
-}

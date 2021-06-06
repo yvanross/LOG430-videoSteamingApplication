@@ -43,7 +43,13 @@ function connectRabbit() {
         .then(messagingConnection => {
             console.log("Connected to RabbitMQ.");
 
-            return messagingConnection.createChannel(); // Create a RabbitMQ messaging channel.
+            return messagingConnection.createChannel()
+                .then(messageChannel => {
+                    return messageChannel.assertExchange("uploaded", "fanout") // Assert that we have a "viewed" exchange.
+                        .then(() => {
+                            return messageChannel;
+                        });
+                }); // Create a RabbitMQ messaging channel.
         });
 }
 
@@ -53,11 +59,10 @@ function connectRabbit() {
 function broadcastVideoUploadedMessage(messageChannel, videoMetadata) {
     console.log(`Publishing message on "video-uploaded" exchange.`);
         
-    const msg = { video: videoMetadata };
+    const msg = { video: videoMetadata, datetime: new Date };
     const jsonMsg = JSON.stringify(msg);
     messageChannel.publish("video-uploaded", "", Buffer.from(jsonMsg)); // Publish message to the "video-uploaded" exchange.
 }
-
 
 //
 // Setup event handlers.
@@ -113,8 +118,8 @@ function main() {
 }
 
 main()
-    .then(() => console.log("Microservice online."))
+    .then(() => console.log("Video-upload Microservice online."))
     .catch(err => {
-        console.error("Microservice failed to start.");
+        console.error("Video-upload Microservice failed to start.");
         console.error(err && err.stack || err);
     });

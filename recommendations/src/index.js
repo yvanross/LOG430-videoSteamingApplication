@@ -109,8 +109,8 @@ function main() {
 }
 
 main()
-    .then(() => console.log("Microservice online."))
+    .then(() => console.log("Recommendation Microservice online."))
     .catch(err => {
-        console.error("Microservice failed to start.");
+        console.error("Recommendation Microservice failed to start.");
         console.error(err && err.stack || err);
     });

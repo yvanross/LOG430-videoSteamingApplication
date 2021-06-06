@@ -3,9 +3,9 @@
 
 terraform {
     backend "azurerm" {
-        resource_group_name  = "terraformvidtreamingapp"
-        storage_account_name = "terraformvidtreamingapp"
-        container_name       = "terraformvidtreamingapp"
+        resource_group_name  = "deploy1"
+        storage_account_name = "deploy1storageaccount"
+        container_name       = "deploy1container"
         key                  = "terraform.tfstate"
     }
 }

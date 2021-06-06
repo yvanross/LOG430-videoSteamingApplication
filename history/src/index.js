@@ -51,8 +51,29 @@ function setupHandlers(app, db, messageChannel) {
 
     const videosCollection = db.collection("videos");
 
+       //
+    // HTTP GET API to retrieve video viewing history.
+    //
+    app.get("/videos", (req, res) => {
+        console.log("history -> /videos")
+        videosCollection.find() // Retreive video list from database.
+            .toArray() // In a real application this should be paginated.
+            .then(videos => {
+                console.log(videos)
+                res.json({ videos });
+            })
+            .catch(err => {
+                console.error("Failed to get videos collection.");
+                console.error(err);
+                res.sendStatus(500);
+            });
+    });
+
     app.post("/viewed", (req, res) => { // Handle the "viewed" message via HTTP POST request.
         const videoPath = req.body.videoPath; // Read JSON body from HTTP request.
+
+        console.log("history/viewed")
+        console.log(videoPath);
         videosCollection.insertOne({ videoPath: videoPath }) // Record the "view" in the database.
             .then(() => {
                 console.log(`Added video ${videoPath} to history.`);
@@ -89,7 +110,7 @@ function setupHandlers(app, db, messageChannel) {
         console.log(JSON.stringify(parsedMsg, null, 4)); // JUST PRINTING THE RECEIVED MESSAGE.
 
         
-        return videosCollection.insertOne({ videoPath: parsedMsg.videoPath }) // Record the "view" in the database.
+        return videosCollection.insertOne({ videoPath: parsedMsg.video }) // Record the "view" in the database.
             .then(() => {
                 console.log("Acknowledging message was handled.");
                 
@@ -107,6 +128,20 @@ function setupHandlers(app, db, messageChannel) {
             return messageChannel.bindQueue(queueName, "viewed", "") // Bind the queue to the exchange.
                 .then(() => {
                     return messageChannel.consume(queueName, consumeViewedMessage); // Start receiving messages from the anonymous queue.
+                });
+        });
+
+
+    return microservice.messageChannel.assertExchange("video-uploaded", "fanout") // Assert that we have a "video-uploaded" exchange.
+        .then(() => {
+            return microservice.messageChannel.assertQueue("", { exclusive: true }); // Create an anonyous queue.
+        })
+        .then(response => {
+            const queueName = response.queue;
+            console.log(`Created queue ${queueName}, binding it to "video-uploaded" exchange.`);
+            return microservice.messageChannel.bindQueue(queueName, "video-uploaded", "") // Bind the queue to the exchange.
+                .then(() => {
+                    return microservice.messageChannel.consume(queueName, consumeViewedMessage); // Start receiving messages from the anonymous queue.
                 });
         });
 }
@@ -143,8 +178,8 @@ function main() {
 }
 
 main()
-    .then(() => console.log("Microservice online."))
+    .then(() => console.log("History Microservice online."))
     .catch(err => {
-        console.error("Microservice failed to start.");
+        console.error("History Microservice failed to start.");
         console.error(err && err.stack || err);
     });    
