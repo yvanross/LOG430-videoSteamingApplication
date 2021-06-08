@@ -64,12 +64,14 @@ function setupHandlers(microservice) {
     //
     microservice.app.get("/video", (req, res) => {
         const videoId = new mongodb.ObjectID(req.query.id);
+        console.log(videoId);
         return videosCollection.findOne({ _id: videoId }) // Returns a promise so we can await the result in the test.
             .then(video => {
                 if (!video) {
                     res.sendStatus(404); // Video with the requested ID doesn't exist!
                 }
                 else {
+                    console.log(video);
                     res.json({ video });
                 }
             })

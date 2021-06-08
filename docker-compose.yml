@@ -17,6 +17,12 @@ services:
       - PORT=80
       - NODE_ENV=development
     restart: "no"
+    depends_on:
+      - video-streaming
+      - history
+      - recommendations
+      - metadata
+      - video-upload
   
   
   
@@ -42,9 +48,10 @@ services:
     depends_on:
       - db
       - rabbit
+      - video-storage
     restart: "no" 
   
-  # vido-storage:
+  # video-storage:
   #   image: azure-storage
   #   build: 
   #     context: ./azure-storage
@@ -57,8 +64,8 @@ services:
   #    - "4002:80"
   #   environment:
   #     - PORT=80
-  #     - STORAGE_ACCOUNT_NAME=rossyprovideostreaming
-  #     - STORAGE_ACCESS_KEY=7h0rtEO4RD9pRuMmBMySGD8hIlDynsqlVYqGdMR8kHZPV4PDf93tu34FtDbLCclPSHnQOkf+4SfdQQTqzQ+bnQ==
+  #     - STORAGE_ACCOUNT_NAME=vsa1storage
+  #     - STORAGE_ACCESS_KEY=ZjGp/NPSEDZWUQhOyfh3PzH6g7Lr8TGhfPGJYFWhkl/iQQLUGxhlhKRxNVAnqHvsoVJsHtIsZ2S5na+Ov8s1NA==
   #   restart: "no"
 
   video-storage:

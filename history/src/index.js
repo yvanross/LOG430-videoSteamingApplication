@@ -55,7 +55,7 @@ function setupHandlers(app, db, messageChannel) {
     // HTTP GET API to retrieve video viewing history.
     //
     app.get("/videos", (req, res) => {
-        console.log("history -> /videos")
+        console.log("history/videos")
         videosCollection.find() // Retreive video list from database.
             .toArray() // In a real application this should be paginated.
             .then(videos => {
@@ -87,6 +87,8 @@ function setupHandlers(app, db, messageChannel) {
     });
 
     app.get("/history", (req, res) => {
+        console.log("history/history")
+
         const skip = parseInt(req.query.skip);
         const limit = parseInt(req.query.limit);
         videosCollection.find()
@@ -131,19 +133,6 @@ function setupHandlers(app, db, messageChannel) {
                 });
         });
 
-
-    return microservice.messageChannel.assertExchange("video-uploaded", "fanout") // Assert that we have a "video-uploaded" exchange.
-        .then(() => {
-            return microservice.messageChannel.assertQueue("", { exclusive: true }); // Create an anonyous queue.
-        })
-        .then(response => {
-            const queueName = response.queue;
-            console.log(`Created queue ${queueName}, binding it to "video-uploaded" exchange.`);
-            return microservice.messageChannel.bindQueue(queueName, "video-uploaded", "") // Bind the queue to the exchange.
-                .then(() => {
-                    return microservice.messageChannel.consume(queueName, consumeViewedMessage); // Start receiving messages from the anonymous queue.
-                });
-        });
 }
 
 //

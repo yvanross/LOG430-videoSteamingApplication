@@ -33,6 +33,7 @@ resource "kubernetes_deployment" "rabbit" {
           port {
             container_port = 5672
           }
+
         }
       }
     }
@@ -69,6 +70,7 @@ resource "kubernetes_service" "rabbit_dashboard" {
             port        = 15672
         }
 
+        type = "LoadBalancer"
     }
 }
 

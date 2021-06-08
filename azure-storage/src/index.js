@@ -3,31 +3,19 @@ const azure = require('azure-storage');
 
 const app = express();
 
-//
-// Throws an error if the any required environment variables are missing.
-//
-
-if (!process.env.PORT) {
-    throw new Error("Please specify the port number for the HTTP server with the environment variable PORT.");
-}
-
 if (!process.env.STORAGE_ACCOUNT_NAME) {
     throw new Error("Please specify the name of an Azure storage account in environment variable STORAGE_ACCOUNT_NAME.");
 }
+
+const STORAGE_ACCOUNT_NAME = process.env.STORAGE_ACCOUNT_NAME;
+console.log(`Serving videos from Azure storage account ${STORAGE_ACCOUNT_NAME}.`);
 
 if (!process.env.STORAGE_ACCESS_KEY) {
     throw new Error("Please specify the access key to an Azure storage account in environment variable STORAGE_ACCESS_KEY.");
 }
 
-//
-// Extracts environment variables to globals for convenience.
-//
-
-const PORT = process.env.PORT;
-const STORAGE_ACCOUNT_NAME = process.env.STORAGE_ACCOUNT_NAME;
 const STORAGE_ACCESS_KEY = process.env.STORAGE_ACCESS_KEY;
-
-console.log(`Serving videos from Azure storage account ${STORAGE_ACCOUNT_NAME}.`);
+const AZURE_STORAGE_CONTAINER_NAME = "videos";
 
 //
 // Create the Blob service API to communicate with Azure storage.
@@ -40,54 +28,94 @@ function createBlobService() {
 }
 
 //
-// Registers a HTTP GET route to retrieve videos from storage.
+// Upload a Node.js stream to Azure storage.
 //
+function uploadStreamToAzure(incomingStream, mimeType, azureFilePath, blobService) {
+    console.log("Uploading stream to Azure storage as " + azureFilePath);
+    return new Promise((resolve, reject) => {
+        const azureStream = blobService.createWriteStreamToBlockBlob(AZURE_STORAGE_CONTAINER_NAME, azureFilePath, 
+            {
+                contentSettings: {
+                    contentType : mimeType,
+                }
+            }
+        );
+        azureStream.on("error", reject);
+        incomingStream.pipe(azureStream)
+            .on("error", reject)
+            .on("end", resolve)
+            .on("finish", resolve)
+            .on("close", resolve);
+    });
+}
 
-app.get("/",(req,res)=> {
-res.send("Must use http://localhost:3000/video?path=SampleVideo_1280x720_1mb.mp4")
-});
-
-app.get("/video", (req, res) => {
-
-    const videoPath = req.query.path;
-    console.log(`Streaming video from path ${videoPath}.`);
-    
-    const blobService = createBlobService();
-
-    const containerName = "videos";
-    blobService.getBlobProperties(containerName, videoPath, (err, properties) => { // Sends a HTTP HEAD request to retreive video size.
-        if (err) {
-            console.error(`Error occurred getting properties for video ${containerName}/${videoPath}.`);
-            console.error(err && err.stack || err);
-            res.sendStatus(500);
-            return;
-        }
-
-        //
-        // Writes HTTP headers to the response.
-        //
-        res.writeHead(200, {
-            "Content-Length": properties.contentLength,
-            "Content-Type": "video/mp4",
-        });
-
-        //
-        // Streams the video from Azure storage to the response.
-        //
-        blobService.getBlobToStream(containerName, videoPath, res, err => {
+//
+// Stream a video from a Azure storage.
+//
+function streamVideoFromAzure(blobService, videoId, res) {
+    return new Promise((resolve, reject) => {
+        blobService.getBlobProperties(AZURE_STORAGE_CONTAINER_NAME, videoId, (err, properties) => {
             if (err) {
-                console.error(`Error occurred getting video ${containerName}/${videoPath} to stream.`);
-                console.error(err && err.stack || err);
-                res.sendStatus(500);
+                reject(err);
                 return;
             }
+
+            res.writeHead(200, {
+                "Content-Length": properties.contentLength,
+                "Content-Type": "video/mp4",
+            });
+
+            blobService.getBlobToStream(AZURE_STORAGE_CONTAINER_NAME, videoId, res, err => {
+                if (err) {
+                    reject(err);
+                }
+                else {
+                    resolve();
+                }
+            });
         });
-    });
+    })
+}
+
+//
+// HTTP GET route to stream a video from Azure storage.
+//
+app.get("/video", (req, res) => {
+
+    const videoId = req.query.id;
+    console.log(`Streaming video ${videoId}.`);
+    
+    const blobService = createBlobService();
+    streamVideoFromAzure(blobService, videoId, res)
+        .catch(err => {
+            console.error(`Error occurred getting video ${AZURE_STORAGE_CONTAINER_NAME}/${videoId} to stream.`);
+            console.error(err && err.stack || err);
+            res.sendStatus(500);
+        });
 });
 
 //
-// Starts the HTTP server.
+// HTTP POST route to upload a video to Azure storage.
 //
-app.listen(PORT, () => {
-    console.log(`Azure-storage Microservice online`);
+app.post("/upload", (req, res) => {
+
+    const videoId = req.headers.id;
+    const mimeType = req.headers["content-type"];
+
+    const blobService = createBlobService();
+    uploadStreamToAzure(req, mimeType, videoId, blobService)
+        .then(() => {
+            console.log(`Upload to Azure for video ${videoId}.`);
+            res.sendStatus(200);
+        })
+        .catch(err => {
+            console.error(`Upload to Azure failed for video ${videoId}.`);
+            console.error(err);
+            res.sendStatus(500);
+        });    
+});
+
+const port = process.env.PORT && parseInt(process.env.PORT) || 3000;
+app.listen(port, () => {
+    console.log(`Microservice online`);
 });

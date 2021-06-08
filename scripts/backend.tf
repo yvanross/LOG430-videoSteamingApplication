@@ -3,9 +3,9 @@
 
 terraform {
     backend "azurerm" {
-        resource_group_name  = "deploy1"
-        storage_account_name = "deploy1storageaccount"
-        container_name       = "deploy1container"
+        resource_group_name  = "vsa1resourcegroup"
+        storage_account_name = "vsa1storage"
+        container_name       = "vsa1container"
         key                  = "terraform.tfstate"
     }
 }

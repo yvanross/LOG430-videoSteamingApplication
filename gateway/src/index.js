@@ -13,9 +13,9 @@ function setupHandlers(app) {
 
     //
     // Main web page that lists videos.
-    //
+    //  
     app.get("/", (req, res) => {
-        console.log("get metadata videos")
+        console.log("getaway/")
         http.request( // Get the list of videos from the metadata microservice.
             {
                 host: `metadata`,
@@ -42,9 +42,9 @@ function setupHandlers(app) {
         ).end();
     });
 
-    //
+    //  
     // Web page to play a particular video.
-    //
+    // 
     app.get("/video", (req, res) => {
         const videoId = req.query.id;
         console.log(`gateway/video/${videoId}`)
